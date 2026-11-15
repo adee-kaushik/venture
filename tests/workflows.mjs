@@ -70,7 +70,7 @@ ok(bookingChat.r.status===200&&!bookingChat.d.reply.includes('recorded for revie
 ok(state.bookings[aid].every(b=>b.requestedTime!=='Upcoming Available Slot'),'No fabricated placeholder booking is stored');
 const bookingChat2=await call(chat,'POST','/api/chat',{businessSlug:aslug,message:'I want an appointment tomorrow at 5 pm. My name is Maya, phone 9000000008'});
 ok(bookingChat2.r.status===200&&state.bookings[aid].some(b=>b.leadId&&b.requestedTime.endsWith('Z')&&b.status==='pending'),'Explicit date and time create a pending booking');
-const repeat=await call(chat,'POST','/api/chat',{businessSlug:aslug,message:'I want an appointment tomorrow at 5 pm. My name is Maya, phone 9000000008'});
+const repeat=await call(chat,'POST','/api/chat',{businessSlug:aslug,message:'I want an appointment tomorrow at 5 pm. My name is Maya, phone 9000000008'},bookingChat2.cookie);
 ok(state.bookings[aid].filter(b=>b.leadId===state.leads[aid].find(l=>l.phone==='9000000008')?.id).length===1,'Repeated assistant request does not duplicate a booking');
 const mayaLead=state.leads[aid].find(l=>l.phone==='9000000008');
 const mayaBooking=state.bookings[aid].find(b=>b.leadId===mayaLead?.id);
