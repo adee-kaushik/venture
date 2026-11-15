@@ -63,6 +63,7 @@ export default function CustomerChatView({ business, template, demo = false }: C
   const [conversationId, setConversationId] = useState<string>("");
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [leadForm, setLeadForm] = useState({ name: "", phone: "", detail: "" });
+  const [qualification, setQualification] = useState({studentClass:"",targetExam:"",service:"",stylist:""});
   const [leadSubmitted, setLeadSubmitted] = useState(false);
 
   useEffect(() => {
@@ -109,7 +110,11 @@ export default function CustomerChatView({ business, template, demo = false }: C
         body: JSON.stringify({
           businessSlug: business.slug,
           message: text,
-          conversationId: conversationId || undefined
+          conversationId: conversationId || undefined,
+          // Public demos are stateless on the server, but can use recent local chat
+          // turns for context. They never save names, numbers or booking records.
+          history: demo ? messages.filter((m) => m.id !== "welcome-1" && (m.role === "customer" || m.role === "ai"))
+            .slice(-12).map((m) => ({ role: m.role, text: m.text })) : undefined
         })
       });
 
@@ -140,7 +145,10 @@ export default function CustomerChatView({ business, template, demo = false }: C
     if(demo){setRequestError("This is a demo. Create a workspace to receive real booking requests.");return;}
     setLoading(true); setRequestError("");
     try {
-      const res=await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessSlug:business.slug,name:leadForm.name,phone:leadForm.phone.replace(/[^+0-9]/g,''),detail:leadForm.detail,requestedTime:preferredTime?new Date(preferredTime+':00+05:30').toISOString():''})});
+      const res=await fetch('/api/booking-request',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessSlug:business.slug,name:leadForm.name,phone:leadForm.phone.replace(/[^+0-9]/g,''),
+        detail:[leadForm.detail,template.id==='coaching'?'Student class: '+qualification.studentClass+'; Target exam: '+qualification.targetExam:'',
+          template.id==='salon'?'Service: '+qualification.service+(qualification.stylist?'; Preferred stylist: '+qualification.stylist:''):'' ].filter(Boolean).join(' | '),
+        requestedTime:preferredTime?new Date(preferredTime+':00+05:30').toISOString():''})});
       const data=await res.json(); if(!res.ok)throw Error(data.error||'Unable to save request');
       setLeadSubmitted(true);
     }catch(e){setRequestError(e instanceof Error?e.message:'Unable to save request');}finally{setLoading(false);}
@@ -329,13 +337,45 @@ export default function CustomerChatView({ business, template, demo = false }: C
                     className="w-full bg-[#FFFFFF] border border-[#DEE7E4] rounded-lg px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-teal-500"
                   />
                 </div>
+                {template.id === "coaching" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-xs font-medium text-stone-700">Student class
+                      <select className="w-full mt-1 rounded-lg border border-[#DEE7E4] bg-white px-2 py-2 text-sm"
+                        required value={qualification.studentClass} onChange={e=>setQualification({...qualification,studentClass:e.target.value})}>
+                        <option value="">Select class</option>
+                        {["Class 9","Class 10","Class 11","Class 12","Dropper"].map(v=><option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </label>
+                    <label className="block text-xs font-medium text-stone-700">Target exam
+                      <select className="w-full mt-1 rounded-lg border border-[#DEE7E4] bg-white px-2 py-2 text-sm"
+                        required value={qualification.targetExam} onChange={e=>setQualification({...qualification,targetExam:e.target.value})}>
+                        <option value="">Select exam</option>
+                        {["JEE","NEET","School boards","Foundation","Other"].map(v=><option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </label>
+                  </div>
+                )}
+                {template.id === "salon" && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="block text-xs font-medium text-stone-700">Service
+                      <input className="w-full mt-1 rounded-lg border border-[#DEE7E4] bg-white px-2 py-2 text-sm"
+                        placeholder="Haircut, facial..." required maxLength={100} value={qualification.service}
+                        onChange={e=>setQualification({...qualification,service:e.target.value})}/>
+                    </label>
+                    <label className="block text-xs font-medium text-stone-700">Preferred stylist
+                      <input className="w-full mt-1 rounded-lg border border-[#DEE7E4] bg-white px-2 py-2 text-sm"
+                        placeholder="Optional" maxLength={80} value={qualification.stylist}
+                        onChange={e=>setQualification({...qualification,stylist:e.target.value})}/>
+                    </label>
+                  </div>
+                )}
                 <div>
-                  <label className="block text-xs font-medium text-stone-700 mb-1">Preferred Slot / Requirement</label>
+                  <label className="block text-xs font-medium text-stone-700 mb-1">Additional requirements (optional)</label>
                   <input
                     type="text"
                     value={leadForm.detail}
                     onChange={(e) => setLeadForm({ ...leadForm, detail: e.target.value })}
-                    placeholder="e.g. Saturday 11 AM, Class 11 Physics"
+                    placeholder="e.g. Physics demo, bridal package, special requests"
                     className="w-full bg-[#FFFFFF] border border-[#DEE7E4] rounded-lg px-3 py-2 text-sm text-stone-900 focus:outline-none focus:border-teal-500"
                   />
                 </div>
