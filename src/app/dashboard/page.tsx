@@ -544,6 +544,29 @@ export default function OwnerDashboard() {
         {loadError && <p role="alert" className="ops-error">{loadError}</p>}
         {activeTab === "overview" && stats && (
           <div className="space-y-6">
+            {knowledge.length < 3 && (
+              <section className="rounded-2xl border border-teal-200 bg-white p-4 sm:p-5 shadow-sm" aria-label="Assistant setup checklist">
+                <div className="flex flex-col sm:flex-row justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold tracking-wider text-teal-800 uppercase">Get your assistant ready</p>
+                    <h2 className="text-base font-semibold text-stone-900 mt-1">Make every reply accurate before sharing</h2>
+                    <p className="text-xs text-stone-600 mt-1">
+                      You have {knowledge.length} verified facts. Add services or courses, prices, timings,
+                      location and booking rules. Your AI never needs to invent an answer.
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => setActiveTab("knowledge")}
+                    className="self-start rounded-xl bg-teal-700 px-4 py-2 text-white text-xs font-semibold hover:bg-teal-800 whitespace-nowrap">
+                    Add business knowledge
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-4 text-xs text-stone-700">
+                  <span className="rounded-full bg-stone-100 px-3 py-1.5">1 · Add business facts</span>
+                  <button type="button" onClick={() => setActiveTab("settings")} className="rounded-full bg-stone-100 px-3 py-1.5 hover:bg-teal-50">2 · Check contact details</button>
+                  <a href={chatUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-stone-100 px-3 py-1.5 hover:bg-teal-50">3 · Test your assistant</a>
+                </div>
+              </section>
+            )}
             {/* Quick Metrics Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="bg-white border border-[#DEE7E4] rounded-2xl p-4 shadow-sm">
