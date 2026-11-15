@@ -109,7 +109,11 @@ export default function CustomerChatView({ business, template, demo = false }: C
         body: JSON.stringify({
           businessSlug: business.slug,
           message: text,
-          conversationId: conversationId || undefined
+          conversationId: conversationId || undefined,
+          // Public demos are stateless on the server, but can use recent local chat
+          // turns for context. They never save names, numbers or booking records.
+          history: demo ? messages.filter((m) => m.id !== "welcome-1" && (m.role === "customer" || m.role === "ai"))
+            .slice(-12).map((m) => ({ role: m.role, text: m.text })) : undefined
         })
       });
 

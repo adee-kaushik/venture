@@ -161,7 +161,7 @@ export class VentureStore {
     }));
     this.knowledge.set(salonBiz.id, salonKB);
 
-    // 3. Gym
+    // 3. Clinic
     const gymBiz: BusinessData = {
       id: "biz-clinic-1",
       slug: "care-clinic",
@@ -404,6 +404,11 @@ export class VentureStore {
 
   saveBooking(businessId: string, booking: { requestedTime: string; details: Record<string, string>; leadId?: string }): BookingRequestData {
     const list = this.getBookings(businessId);
+    // Network retries and multi-turn assistants must not duplicate the same
+    // customer's pending or confirmed request for the same exact slot.
+    const duplicate = list.find(b => b.leadId && b.leadId === booking.leadId &&
+      b.requestedTime === booking.requestedTime && b.status !== "declined");
+    if (duplicate) return duplicate;
     const newBooking: BookingRequestData = {
       id: `book-${crypto.randomUUID()}`,
       businessId,
