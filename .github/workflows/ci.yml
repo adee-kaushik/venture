@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
+      # Existing repository lockfile has missing transitive Prisma type entries.
+      # Resolve the lock before the clean install until the committed lock is regenerated.
+      - run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
       - run: npm ci
       - run: npm test
       - run: npm run build
