@@ -33,7 +33,7 @@ export function parsePreferredTime(input: string, now: Date = new Date()): strin
   }
 
   const ampm = text.match(/\b(?:at|around|by)?\s*(1[0-2]|0?[1-9])(?::([0-5]\d))?\s*(am|pm)\b/);
-  const clock24 = !ampm && text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+  const clock24 = ampm ? null : text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
   if (!ampm && !clock24) return null;
   let hour = Number(ampm ? ampm[1] : clock24![1]);
   const minute = Number(ampm ? (ampm[2] || "0") : clock24![2]);
