@@ -1,0 +1,146 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Business {
+  id           String              @id @default(uuid())
+  slug         String              @unique
+  name         String
+  templateType String              // "coaching" | "salon" | "gym" | "cafe"
+  city         String              @default("Jaipur")
+  timings      String              @default("9:00 AM - 8:00 PM")
+  address      String?
+  contact      String?
+  config       Json?               // Template specific configuration & questions
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  users        User[]
+  knowledge    KnowledgeItem[]
+  conversations Conversation[]
+  leads        Lead[]
+  bookings     BookingRequest[]
+  unanswered   UnansweredQuestion[]
+  followUps    FollowUp[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([businessId])
+}
+
+model KnowledgeItem {
+  id         String   @id @default(uuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category   String   // "courses" | "pricing" | "faculty" | "timings" | "faq" etc.
+  title      String
+  content    String
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+
+  @@index([businessId, category])
+}
+
+model Conversation {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  channel     String   @default("web") // "web" | "whatsapp"
+  customerRef String?  // session ID or phone number
+  status      String   @default("active") // "active" | "closed"
+  startedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  messages    Message[]
+  leads       Lead[]
+  unanswered  UnansweredQuestion[]
+
+  @@index([businessId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String       // "customer" | "ai" | "owner"
+  text           String
+  inputTokens    Int          @default(0)
+  outputTokens   Int          @default(0)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+}
+
+model Lead {
+  id             String          @id @default(uuid())
+  businessId     String
+  business       Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversationId String?
+  conversation   Conversation?   @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  name           String
+  phone          String
+  details        Json?           // Dynamic template fields e.g. class, exam, targetService
+  status         String          @default("new") // "new" | "contacted" | "converted" | "lost"
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  bookings       BookingRequest[]
+  followUps      FollowUp[]
+
+  @@index([businessId, status])
+}
+
+model BookingRequest {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leadId        String?
+  lead          Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  requestedTime String
+  details       Json?    // e.g. { demoSubject: "Physics", batch: "Evening" }
+  status        String   @default("pending") // "pending" | "confirmed" | "declined"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId, status])
+}
+
+model UnansweredQuestion {
+  id             String        @id @default(uuid())
+  businessId     String
+  business       Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  conversationId String?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  question       String
+  resolved       Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([businessId, resolved])
+}
+
+model FollowUp {
+  id            String   @id @default(uuid())
+  businessId    String
+  business      Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leadId        String
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  suggestedText String
+  status        String   @default("suggested") // "suggested" | "approved" | "sent_simulated"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([businessId, status])
+}
