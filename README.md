@@ -7,17 +7,19 @@ A salon-first customer-engagement pilot for salons, coaching centres, clinics an
 - Private owner accounts and business-scoped access
 - Editable business facts and grounded customer replies
 - Customer inbox, human takeover and owner replies
-- Booking requests with date, duration, resource and overlap checks
+- Booking requests with date, duration, resource and overlap checks; customer notifications on website chat
+- Monthly appointment calendar, coaching student qualification and salon service intake
+- Multi-turn public demos and conservative booking-date handling (never fabricate available slots)
 - Lead management and a manual WhatsApp follow-up planner
 - Customer links, QR sharing and an embeddable chat widget
-- Four clearly labelled demos that do not save contact details
+- Four clearly labelled demos that use client-supplied recent context without saving contact details
 
 ## Local setup
 
 Use Node.js 22 or newer.
 
 ```bash
-npm ci
+npm install
 cp .env.example .env.local
 ```
 
@@ -41,7 +43,7 @@ npm test
 npm run build
 ```
 
-The 21 workflow checks use an isolated simulated transaction transport. They do not replace a hosted PostgreSQL integration test.
+The 29 workflow checks use an isolated simulated transaction transport. They do not replace a hosted PostgreSQL integration test.
 
 ## Deployment
 

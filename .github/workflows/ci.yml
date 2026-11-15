@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [feature/complete-core-workflows-20261115]
+    branches: [main]
 
 permissions:
   contents: read

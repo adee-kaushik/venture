@@ -1,4 +1,29 @@
-# VentureLab salon-first pilot
+# VentureLab — release history
+
+## 15 November 2026: Core pilot improvements (merged to main)
+
+- GitHub merge commit: d7b81d2614e48b0df4baf7b33ebdad16e9a0bc38
+- GitHub Actions: 29 simulated workflow checks and the Next.js production build passed before merging.
+- Vercel's GitHub deployment status reported success for the merged commit. This does NOT establish that hosted signup, data persistence, WhatsApp, or delivery have passed live end-to-end tests.
+- Public demo assistants now accept recent local conversation history, while their contact details and booking requests are not saved.
+- Conservative India Standard Time date handling, lead capture without fabricated slot dates, and duplicate-booking protection.
+- Owner appointment calendar and one-click website customer-chat confirmations for approved or declined appointments.
+- Coaching intake captures class and target exam; salon intake captures service and optional stylist.
+- Owner dashboard includes an onboarding checklist when business knowledge is incomplete.
+- GitHub Actions now checks pull requests and updates to main.
+- Important: The existing package-lock.json needs regeneration. CI runs npm install --package-lock-only before npm ci as a temporary workaround.
+
+### Still required before onboarding paying clients
+
+1. Verify production DATABASE_URL, ADMIN_SESSION_SECRET and persistent signup/booking records, including across a server restart and two unrelated owner accounts.
+2. Complete and test official Meta WhatsApp credentials, idempotent webhook processing, outbound retries, provider delivery status, consent and approved notification templates. Manual WhatsApp links are not automated reminders.
+3. Replace the single PostgreSQL JSON snapshot with normalized, indexed tables and move outbound AI/network calls out of write locks for concurrent traffic.
+4. Implement public real-time availability, resource working hours, holidays, rescheduling, and customer-initiated cancellation.
+5. Add production owner recovery, staff roles, privacy/retention controls, monitoring and accessibility/mobile-browser checks.
+
+---
+
+## Original salon-first pilot (historical, before 15 November update)
 
 Built on the existing VentureLab application and previous stabilization branch.
 
@@ -22,7 +47,7 @@ Built on the existing VentureLab application and previous stabilization branch.
 - `node --import tsx tests/workflows.mjs`: 21 route/workflow checks passed using an isolated simulated transaction transport. Covers registration/login, tenant isolation, forged sessions, knowledge ownership, grounded replies, conversation isolation, owner replies, conflicting booking confirmation, resource separation, CRM status validation, follow-ups and non-persistent clinic demos.
 - Landing page visually inspected in the managed browser. Hosted database integration and a production deployment are not verified.
 
-## Deployment status and required environment
+## Prior deployment status and required environment (historical)
 
 No production deployment was made. The connected Vercel account exposes NeuraFitness only, not the existing `venture-lab-chi.vercel.app` project. Creating a Git-linked VentureLab project returned 403 permission denied. CLI credentials are not available. Keep this release off the production branch until the correct project can be configured and tested.
 
