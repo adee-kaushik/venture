@@ -72,4 +72,9 @@ const bookingChat2=await call(chat,'POST','/api/chat',{businessSlug:aslug,messag
 ok(bookingChat2.r.status===200&&state.bookings[aid].some(b=>b.leadId&&b.requestedTime.endsWith('Z')&&b.status==='pending'),'Explicit date and time create a pending booking');
 const repeat=await call(chat,'POST','/api/chat',{businessSlug:aslug,message:'I want an appointment tomorrow at 5 pm. My name is Maya, phone 9000000008'});
 ok(state.bookings[aid].filter(b=>b.leadId===state.leads[aid].find(l=>l.phone==='9000000008')?.id).length===1,'Repeated assistant request does not duplicate a booking');
+const mayaLead=state.leads[aid].find(l=>l.phone==='9000000008');
+const mayaBooking=state.bookings[aid].find(b=>b.leadId===mayaLead?.id);
+const confirmedMaya=await call(bookings,'PATCH','/api/bookings',{businessId:aid,bookingId:mayaBooking.id,status:'confirmed',resource:'Stylist Maya',durationMinutes:30},ac);
+ok(confirmedMaya.d.notifiedCustomer===true,'One-click booking confirmation notifies the linked website customer');
+ok((await call(chat,'GET','/api/chat?businessSlug='+aslug,undefined,bookingChat2.cookie)).d.messages.some(m=>m.role==='owner'&&m.text.includes('confirmed')),'Customer can read booking confirmation in their thread');
 console.log(`\n${passed} workflow checks passed. Database transport is simulated; hosted PostgreSQL integration must be checked after deployment.`);

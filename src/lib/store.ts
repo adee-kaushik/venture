@@ -363,6 +363,8 @@ export class VentureStore {
     const existing = leads.find((l) => l.phone.replace(/\D/g, "") === lead.phone.replace(/\D/g, ""));
     if (existing) {
       existing.details = { ...existing.details, ...lead.details };
+      if (existing.name === "Interested Customer" && lead.name !== "Interested Customer") existing.name = lead.name;
+      if (lead.conversationId) existing.conversationId = lead.conversationId;
       existing.updatedAt = new Date().toISOString();
       this.saveToDisk();
       return existing;

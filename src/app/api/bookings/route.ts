@@ -20,5 +20,22 @@ export const PATCH=persistent(async(req:NextRequest)=>{
   if(conflict)return NextResponse.json({error:'This team member or resource already has an overlapping booking. Choose another time or resource.'},{status:409});
  }
  booking.requestedTime=time;booking.details={...booking.details,durationMinutes:String(duration),resource:assigned};
- store.updateBookingStatus(businessId,bookingId,status);return NextResponse.json({success:true,booking});
+ const changed=booking.status!==status;
+ store.updateBookingStatus(businessId,bookingId,status);
+ // One-click owner confirmations appear in the linked website conversation.
+ // WhatsApp confirmations must use an approved, consent-aware provider flow.
+ let notifiedCustomer=false;
+ if(changed && (status==='confirmed'||status==='declined') && booking.leadId){
+  const lead=store.getLeads(businessId).find(l=>l.id===booking.leadId);
+  const conversation=lead?.conversationId && store.getConversations(businessId).find(c=>c.id===lead.conversationId);
+  if(conversation && conversation.channel==='web' && conversation.status!=='closed'){
+   const dateLabel=new Date(start).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'});
+   const text=status==='confirmed'
+    ? 'Your appointment request has been confirmed for '+dateLabel+' IST. Please contact the business if you need to make a change.'
+    : 'Your appointment request could not be confirmed. Please reply here so our team can help with another time.';
+   store.addMessage(conversation.id,{role:'owner',text,inputTokens:0,outputTokens:0});
+   notifiedCustomer=true;
+  }
+ }
+ return NextResponse.json({success:true,booking,notifiedCustomer});
 });
