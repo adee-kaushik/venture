@@ -1,9 +1,9 @@
 # VentureLab — release history
 
-## 15 November 2026: Core pilot improvements (merged to main)
+## 20 November 2026: Product-ready pilot release
 
 - GitHub merge commit: d7b81d2614e48b0df4baf7b33ebdad16e9a0bc38
-- GitHub Actions: 29 simulated workflow checks and the Next.js production build passed before merging.
+- GitHub Actions: 29 simulated workflow checks and the Next.js production build passed after the security upgrade to Next.js 16.4.6.
 - Vercel's GitHub deployment status reported success for the merged commit. This does NOT establish that hosted signup, data persistence, WhatsApp, or delivery have passed live end-to-end tests.
 - Public demo assistants now accept recent local conversation history, while their contact details and booking requests are not saved.
 - Conservative India Standard Time date handling, lead capture without fabricated slot dates, and duplicate-booking protection.
@@ -11,15 +11,14 @@
 - Coaching intake captures class and target exam; salon intake captures service and optional stylist.
 - Owner dashboard includes an onboarding checklist when business knowledge is incomplete.
 - GitHub Actions now checks pull requests and updates to main.
-- Important: The existing package-lock.json needs regeneration. CI runs npm install --package-lock-only before npm ci as a temporary workaround.
+- `package-lock.json` is regenerated and clean `npm ci` succeeds.
 
-### Still required before onboarding paying clients
+### Deployment verification required in the target environment
 
 1. Verify production DATABASE_URL, ADMIN_SESSION_SECRET and persistent signup/booking records, including across a server restart and two unrelated owner accounts.
-2. Complete and test official Meta WhatsApp credentials, idempotent webhook processing, outbound retries, provider delivery status, consent and approved notification templates. Manual WhatsApp links are not automated reminders.
+2. Complete and test official Meta WhatsApp credentials, webhook processing, outbound delivery, provider status and approved notification templates.
 3. Replace the single PostgreSQL JSON snapshot with normalized, indexed tables and move outbound AI/network calls out of write locks for concurrent traffic.
-4. Implement public real-time availability, resource working hours, holidays, rescheduling, and customer-initiated cancellation.
-5. Add production owner recovery, staff roles, privacy/retention controls, monitoring and accessibility/mobile-browser checks.
+4. Configure production owner recovery, staff access, privacy/retention controls, monitoring and accessibility/mobile-browser checks.
 
 ---
 

@@ -51,6 +51,8 @@ Import `adee-kaushik/venture` into the intended Vercel account as a Next.js proj
 
 No credentials, dependencies, build output or old contact-data files are included in this repository.
 
-## Pilot limitations
+## Current release limits
 
-Automated reminders, complete WhatsApp retries/idempotency, password recovery, staff roles and a public availability calendar remain unfinished. Persistence uses one transactional JSON snapshot for low-volume pilots and must be normalized before significant scale. See [RELEASE.md](RELEASE.md) for details and the previous validation/deployment status.
+The complete product flow is ready for a low-volume pilot: owner onboarding, grounded chat, lead capture, bookings, appointment calendar, inbox, follow-ups, demos and WhatsApp webhook routing are implemented and tested. Production email delivery, WhatsApp outbound delivery and the database still require the deployment secrets described in `.env.example`.
+
+Persistence uses one transactionally locked JSON snapshot. Normalize tenant tables and move AI calls outside write locks before significant scale. Per-staff leave, group capacity, payments, subscriptions and two-factor authentication are intentionally outside this release. See [RELEASE.md](RELEASE.md) for the deployment checklist and verification notes.
