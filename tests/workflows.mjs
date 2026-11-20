@@ -21,6 +21,7 @@ const conversations=require('../src/app/api/conversations/route.ts');
 const leads=require('../src/app/api/leads/route.ts');
 const followups=require('../src/app/api/followups/route.ts');
 const demo=require('../src/app/api/demo-chat/route.ts');
+const health=require('../src/app/api/health/route.ts');
 function req(path,method='GET',body,cookie=''){return new NextRequest('https://venturelab.test'+path,{method,headers:{'content-type':'application/json',cookie,'x-forwarded-for':'127.0.0.1'},...(body?{body:JSON.stringify(body)}:{})});}
 async function call(route,method,path,body,cookie){const r=await route[method](req(path,method,body,cookie));const d=await r.json();return{r,d,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
 let passed=0;function ok(condition,label){assert.ok(condition,label);passed++;console.log('PASS',label);}
@@ -77,4 +78,25 @@ const mayaBooking=state.bookings[aid].find(b=>b.leadId===mayaLead?.id);
 const confirmedMaya=await call(bookings,'PATCH','/api/bookings',{businessId:aid,bookingId:mayaBooking.id,status:'confirmed',resource:'Stylist Maya',durationMinutes:30},ac);
 ok(confirmedMaya.d.notifiedCustomer===true,'One-click booking confirmation notifies the linked website customer');
 ok((await call(chat,'GET','/api/chat?businessSlug='+aslug,undefined,bookingChat2.cookie)).d.messages.some(m=>m.role==='owner'&&m.text.includes('confirmed')),'Customer can read booking confirmation in their thread');
+const healthy = await call(health,'GET','/api/health');
+ok(healthy.r.status===200&&healthy.d.code==='READY'&&healthy.d.checks.workspace===true,'Readiness endpoint verifies database, state, and session configuration');
+ok(healthy.r.headers.get('cache-control')?.includes('no-store'),'Readiness endpoint cannot be cached');
+const savedSession=process.env.ADMIN_SESSION_SECRET;
+delete process.env.ADMIN_SESSION_SECRET;
+const noSession=await call(health,'GET','/api/health');
+ok(noSession.r.status===503&&noSession.d.code==='SESSION_SECRET_MISSING','Readiness detects missing session secret');
+process.env.ADMIN_SESSION_SECRET=savedSession;
+const savedUrl=process.env.DATABASE_URL;
+delete process.env.DATABASE_URL;
+const noDb=await call(health,'GET','/api/health');
+ok(noDb.r.status===503&&noDb.d.code==='DATABASE_URL_MISSING','Readiness detects missing DATABASE_URL');
+process.env.DATABASE_URL=savedUrl;
+const originalConnect=Pool.prototype.connect;
+Pool.prototype.connect=async function(){const error=new Error('hidden password details');error.code='28P01';throw error;};
+const badAuth=await call(health,'GET','/api/health');
+ok(badAuth.r.status===503&&badAuth.d.code==='DATABASE_AUTH_FAILED'&&!JSON.stringify(badAuth.d).includes('hidden'),'Readiness reports authentication failure without leaking credentials');
+Pool.prototype.connect=originalConnect;
+const schemaError = new Error('relation missing'); schemaError.code='42P01';
+const {workspaceErrorCode}=require('../src/lib/database.ts');
+ok(workspaceErrorCode(schemaError)==='DATABASE_SCHEMA_MISSING','Missing database migration has a distinct diagnostic code');
 console.log(`\n${passed} workflow checks passed. Database transport is simulated; hosted PostgreSQL integration must be checked after deployment.`);
