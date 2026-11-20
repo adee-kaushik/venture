@@ -21,12 +21,20 @@ const conversations=require('../src/app/api/conversations/route.ts');
 const leads=require('../src/app/api/leads/route.ts');
 const followups=require('../src/app/api/followups/route.ts');
 const demo=require('../src/app/api/demo-chat/route.ts');
+const {BusinessSettings}=require('../src/components/dashboard/Operations.tsx');
+const React=require('react');
+const {renderToStaticMarkup}=require('react-dom/server');
 const health=require('../src/app/api/health/route.ts');
 function req(path,method='GET',body,cookie=''){return new NextRequest('https://venturelab.test'+path,{method,headers:{'content-type':'application/json',cookie,'x-forwarded-for':'127.0.0.1'},...(body?{body:JSON.stringify(body)}:{})});}
 async function call(route,method,path,body,cookie){const r=await route[method](req(path,method,body,cookie));const d=await r.json();return{r,d,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
 let passed=0;function ok(condition,label){assert.ok(condition,label);passed++;console.log('PASS',label);}
 const a=await call(register,'POST','/api/auth/register',{email:'salon@example.test',password:'test-password-123',name:'Test Salon',templateType:'salon',contact:'9000000001'});
 ok(a.r.status===200,'Owner registration creates a private workspace');const aid=a.d.business.id,aslug=a.d.business.slug,ac=a.cookie;
+const settingsHTML=renderToStaticMarkup(React.createElement(BusinessSettings,{businessId:aid,initialBusiness:{id:aid,name:'Test Salon',city:'Jaipur',timings:'10 AM - 8 PM',contact:'9000000001',address:''}}));
+ok(settingsHTML.includes('value="Test Salon"')&&settingsHTML.includes('value="9000000001"'),'Business settings renders immediately from already loaded dashboard business');
+ok(settingsHTML.includes('Business address (optional)')&&!settingsHTML.includes('Business settings could not be loaded'),'New workspace shows editable optional address instead of failed settings request');
+const settingsSave=await call(business,'PATCH','/api/business',{businessId:aid,name:'Test Salon',address:''},ac);
+ok(settingsSave.r.status===200&&settingsSave.d.business.address==='','Empty business address is allowed while updating settings');
 const b=await call(register,'POST','/api/auth/register',{email:'coaching@example.test',password:'test-password-456',name:'Test Coaching',templateType:'coaching',contact:'9000000002'});const bid=b.d.business.id,bc=b.cookie;
 ok((await call(knowledge,'GET','/api/knowledge?businessId='+aid,undefined,ac)).d.items.length===0,'Real businesses start without fictional knowledge');
 ok((await call(business,'GET','/api/business',undefined,ac)).d.businesses.length===1,'Owner sees only their business');
