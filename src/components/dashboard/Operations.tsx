@@ -7,7 +7,23 @@ type Lead={id:string;name:string;phone:string};
 type Conversation={id:string;status:string;channel:string;messageCount:number;lastMessage?:{text:string}};
 type Message={id:string;role:string;text:string;createdAt:string};
 type FollowUp={id:string;leadId:string;status:string;dueAt:string;text:string};
-async function request(path:string,data?:unknown,method='POST'){const r=await fetch(path,data?{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:undefined);const d=await r.json();if(!r.ok)throw Error(d.error||'Please retry');return d;}
+async function request(path:string,data?:unknown,method='POST'){
+ const options = data ? {method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)} : undefined;
+ // Retry once only for interrupted read requests; never retry writes that may already have succeeded.
+ for (let attempt = 0; attempt < (data === undefined ? 2 : 1); attempt++) {
+  try {
+   const response = await fetch(path,options);
+   const result = await response.json();
+   if (!response.ok) throw new Error(result.error || 'Request failed ('+response.status+')');
+   return result;
+  } catch(error) {
+   if (error instanceof TypeError && data === undefined && attempt === 0) continue;
+   if (error instanceof TypeError) throw new Error('The connection was interrupted. Please retry.');
+   throw error;
+  }
+ }
+ throw new Error('Unable to load the requested data. Please retry.');
+}
 export function BookingDesk({businessId}:{businessId:string}){
  const [items,setItems]=useState<Booking[]>([]);const [leads,setLeads]=useState<Lead[]>([]);const [error,setError]=useState('');const [busy,setBusy]=useState('');
  async function load(){try{const [b,l]=await Promise.all([request('/api/bookings?businessId='+businessId),request('/api/leads?businessId='+businessId)]);setItems(b.bookings);setLeads(l.leads);}catch(e){setError(String(e));}}
@@ -31,9 +47,60 @@ export function FollowUps({businessId}:{businessId:string}){
  async function save(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError('');const form=e.currentTarget;const f=new FormData(form);try{await request('/api/followups',{businessId,leadId:f.get('leadId'),text:f.get('text'),dueAt:new Date(String(f.get('date'))+':00+05:30').toISOString()});form.reset();await load();}catch(e){setError(String(e));}finally{setBusy(false);}}
  return <section className="ops"><div className="ops-title"><div><p className="eyebrow">A LITTLE FOLLOW-UP GOES A LONG WAY</p><h2>Follow-up planner</h2><p>Plan a personal message, then open WhatsApp to review and send it yourself. Nothing is sent automatically.</p></div></div>{error&&<p className="ops-error" role="alert">{error}</p>}<form onSubmit={save} className="booking-card"><div className="booking-fields"><label>Customer<select name="leadId" required><option value="">Choose a lead</option>{leads.map(l=><option key={l.id} value={l.id}>{l.name} · {l.phone}</option>)}</select></label><label>Due date (IST)<input name="date" type="datetime-local" required/></label></div><label className="ops-label">Personal message<textarea name="text" required maxLength={2000} rows={3} placeholder="Hi! Following up on your enquiry. How can we help?"/></label><button disabled={busy||!leads.length} className="ops-button filled">{busy?'Saving…':'Schedule follow-up'}</button>{!leads.length&&<p className="small">Capture a lead through your customer assistant first.</p>}</form>{list.map(f=>{const l=leads.find(l=>l.id===f.leadId);const digits=l?.phone.replace(/\D/g,'')||'';return <article className="booking-card" key={f.id}><div className="booking-head"><strong>{l?.name||'Customer'}</strong><span className="status">{f.status==='done'?'Completed':new Date(f.dueAt)<new Date()?'Due now':'Scheduled'}</span></div><p className="request-text">{f.text}</p><p className="small">{new Date(f.dueAt).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})} IST</p><div className="ops-actions"><a target="_blank" rel="noreferrer" className="ops-button filled" href={`https://wa.me/${digits.length===10?'91'+digits:digits}?text=${encodeURIComponent(f.text)}`}>Review in WhatsApp <ArrowUpRight size={14}/></a><button className="ops-button" onClick={async()=>{try{await request('/api/followups',{businessId,id:f.id,status:f.status==='done'?'pending':'done'},'PATCH');await load();}catch(e){setError(String(e));}}}>{f.status==='done'?'Reopen':'Mark completed'}</button></div></article>;})}</section>;
 }
-export function BusinessSettings({businessId}:{businessId:string}){
- const [business,setBusiness]=useState<Record<string,string>|null>(null);const [error,setError]=useState('');const [notice,setNotice]=useState('');const [busy,setBusy]=useState(false);
- useEffect(()=>{request('/api/business').then(d=>setBusiness(d.businesses.find((b:{id:string})=>b.id===businessId))).catch(e=>setError(String(e)));},[businessId]);
- async function save(e:FormEvent<HTMLFormElement>){e.preventDefault();setError('');setNotice('');setBusy(true);try{await request('/api/business',{businessId,...Object.fromEntries(new FormData(e.currentTarget))},'PATCH');setNotice('Business details saved. Your customer assistant now uses these details.');}catch(e){setError(String(e));}finally{setBusy(false);}}
- return <section className="ops"><div className="ops-title"><div><p className="eyebrow">THE DETAILS MAKE IT YOURS</p><h2>Business settings</h2><p>Keep the information your customers see accurate and up to date.</p></div></div>{error&&<p className="ops-error" role="alert">{error}</p>}{notice&&<p role="status" className="request-text">{notice}</p>}{business&&<form onSubmit={save} className="booking-card"><div className="booking-fields">{[['name','Business name'],['city','City'],['timings','Opening hours'],['contact','Business phone'],['address','Business address']].map(([key,label])=><label key={key}>{label}<input name={key} defaultValue={business[key]} maxLength={250} required/></label>)}</div><button className="ops-button filled" disabled={busy}>{busy?'Saving…':'Save details'}</button></form>}</section>;
+type BusinessSettingsData = { id:string; name:string; city?:string; timings?:string; contact?:string; address?:string };
+
+export function BusinessSettings({businessId,initialBusiness,onSaved}:{businessId:string;initialBusiness?:BusinessSettingsData;onSaved?:()=>void|Promise<void>}){
+ const [business,setBusiness]=useState<BusinessSettingsData|null>(initialBusiness?.id===businessId ? initialBusiness : null);
+ const [error,setError]=useState('');
+ const [notice,setNotice]=useState('');
+ const [busy,setBusy]=useState(false);
+
+ async function reload(){
+  setError('');
+  try {
+   const result=await request('/api/business');
+   const found=(result.businesses as BusinessSettingsData[]).find(b=>b.id===businessId);
+   if (!found) throw new Error('This business is not available in your workspace.');
+   setBusiness(found);
+  } catch {
+   setError('Business settings could not be loaded. Check your connection and try again.');
+  }
+ }
+
+ useEffect(()=>{
+  if(initialBusiness?.id===businessId){
+   setBusiness(initialBusiness);
+   setError('');
+   return;
+  }
+  // Only fetch when the parent dashboard does not already have the selected business.
+  void reload();
+ },[businessId,initialBusiness]);
+
+ async function save(e:FormEvent<HTMLFormElement>){
+  e.preventDefault();setError('');setNotice('');setBusy(true);
+  try {
+   const result=await request('/api/business',{businessId,...Object.fromEntries(new FormData(e.currentTarget))},'PATCH');
+   setBusiness(result.business);
+   setNotice('Business details saved. Your customer assistant now uses these details.');
+   void onSaved?.();
+  }catch(e){setError(e instanceof Error?e.message:'Unable to save business details.');}
+  finally{setBusy(false);}
+ }
+
+ return <section className="ops">
+  <div className="ops-title"><div><p className="eyebrow">THE DETAILS MAKE IT YOURS</p><h2>Business settings</h2><p>Keep the information your customers see accurate and up to date.</p></div></div>
+  {error&&<div className="ops-error" role="alert"><p>{error}</p><button className="ops-button" type="button" onClick={()=>void reload()}>Retry loading</button></div>}
+  {notice&&<p role="status" className="request-text">{notice}</p>}
+  {business?<form key={business.id} onSubmit={save} className="booking-card">
+   <div className="booking-fields">{([
+    ['name','Business name'],
+    ['city','City'],
+    ['timings','Opening hours'],
+    ['contact','Business phone'],
+    ['address','Business address (optional)']
+   ] as const).map(([key,label])=><label key={key}>{label}<input name={key} defaultValue={business[key]??''} maxLength={250} required={key!=='address'}/></label>)}</div>
+   <button className="ops-button filled" disabled={busy}>{busy?'Saving…':'Save details'}</button>
+  </form>:!error&&<p className="request-text">Loading business settings…</p>}
+ </section>;
 }

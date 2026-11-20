@@ -33,6 +33,10 @@ interface BusinessItem {
   id: string;
   name: string;
   vertical: string;
+  city?: string;
+  timings?: string;
+  contact?: string;
+  address?: string;
 }
 
 interface LeadItem {
@@ -155,11 +159,15 @@ export default function OwnerDashboard() {
       const res = await fetch("/api/business");
       const data = await res.json();
       if (data.success && Array.isArray(data.businesses)) {
-        const formatted: BusinessItem[] = data.businesses.map((b: { slug: string; id: string; name: string; templateType: string }) => ({
+        const formatted: BusinessItem[] = data.businesses.map((b: { slug: string; id: string; name: string; templateType: string; city?: string; timings?: string; contact?: string; address?: string }) => ({
           slug: b.slug,
           id: b.id,
           name: b.name,
-          vertical: b.templateType.charAt(0).toUpperCase() + b.templateType.slice(1)
+          vertical: b.templateType.charAt(0).toUpperCase() + b.templateType.slice(1),
+          city: b.city,
+          timings: b.timings,
+          contact: b.contact,
+          address: b.address
         }));
         setBusinesses(formatted);setBusinessesReady(true);setIsAdmin(data.isAdmin);
         if (formatted.length) { setBusinessId(formatted[0].id); setActiveBusinessSlug(formatted[0].slug); }
@@ -1075,7 +1083,7 @@ export default function OwnerDashboard() {
           </div>
         )}
 
-        {activeTab === "settings" && <BusinessSettings key={businessId} businessId={businessId}/>}
+        {activeTab === "settings" && <BusinessSettings key={businessId} businessId={businessId} initialBusiness={currentBusiness} onSaved={fetchBusinesses}/>}
         {activeTab === "bookings" && <BookingDesk key={businessId} businessId={businessId}/>}
         {activeTab === "conversations" && <Inbox key={businessId} businessId={businessId}/>}
         {activeTab === "followups" && <FollowUps key={businessId} businessId={businessId}/>}

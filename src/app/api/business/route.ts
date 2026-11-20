@@ -77,7 +77,7 @@ export const PATCH = persistent(async (req: NextRequest) => {
   const {businessId,...updates}=await req.json();const business=store.getBusiness(businessId);
   if(!business)return NextResponse.json({error:'Business not found'},{status:404});
   for(const key of ['name','city','timings','contact','address'] as const){
-    if(updates[key]!==undefined){if(typeof updates[key]!=='string'||updates[key].length>250||!updates[key].trim())return NextResponse.json({error:'Complete every business detail (maximum 250 characters each)'},{status:400});}
+    if(updates[key]!==undefined){if(typeof updates[key]!=='string'||updates[key].length>250||(key!=='address'&&!updates[key].trim()))return NextResponse.json({error:'Complete every required business detail (maximum 250 characters each)'},{status:400});}
   }
   for(const key of ['name','city','timings','contact','address'] as const)if(updates[key]!==undefined)business[key]=updates[key].trim();
   store.dirty=true;return NextResponse.json({success:true,business});
