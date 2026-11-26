@@ -1,6 +1,6 @@
 import { scryptSync, randomBytes, timingSafeEqual } from 'node:crypto';
 import { store } from './store';
-export interface Account { email: string; hash: string; salt: string; businessId: string }
+export interface Account { email: string; hash: string; salt: string; businessId: string; role?: 'owner' | 'staff'; name?: string; active?: boolean; sessionVersion?: number }
 export function accounts() { return (store.extra.accounts || []) as Account[]; }
 export function passwordHash(password: string, salt: string) { return scryptSync(password, salt, 64).toString('hex'); }
 export function registerAccount(email: string, password: string, businessId: string) {

@@ -1,6 +1,9 @@
 "use client";
 
 import { BookingDesk, Inbox, FollowUps, BusinessSettings } from "@/components/dashboard/Operations";
+import TeamSettings from "@/components/dashboard/TeamSettings";
+import Overview from "@/components/dashboard/Overview";
+import "./workspace.css";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import VentureBrand from "../venture-brand";
@@ -11,14 +14,11 @@ import {
   HelpCircle,
   CalendarCheck,
   TrendingUp,
-  Coins,
   RefreshCw,
   Plus,
-  ExternalLink,
   CheckCircle,
   Sparkles,
   Layers,
-  ArrowRight,
   Phone,
   Trash2,
   Copy,
@@ -118,6 +118,8 @@ export default function OwnerDashboard() {
     "settings" | "followups" | "overview" | "leads" | "knowledge" | "unanswered" | "bookings" | "conversations" | "qr" | "embed"
   >("overview");
 
+  const [role,setRole]=useState('owner');
+  const [moreOpen,setMoreOpen]=useState(false);
   const [businessesReady, setBusinessesReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   // Businesses list for switcher (fetched dynamically + defaults)
@@ -170,7 +172,7 @@ export default function OwnerDashboard() {
           contact: b.contact,
           address: b.address
         }));
-        setBusinesses(formatted);setBusinessesReady(true);setIsAdmin(data.isAdmin);
+        setBusinesses(formatted);setBusinessesReady(true);setIsAdmin(data.isAdmin);setRole(data.role || "owner");
         if (formatted.length) { setBusinessId(formatted[0].id); setActiveBusinessSlug(formatted[0].slug); }
       }
     } catch (e) {
@@ -396,343 +398,13 @@ export default function OwnerDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F7F9F8] text-[#172F32] selection:bg-teal-200 selection:text-teal-900 flex flex-col md:flex-row w-full overflow-x-hidden">
+    <div className="workspace min-h-screen bg-[#F7F9F8] text-[#172F32] selection:bg-teal-200 selection:text-teal-900 flex flex-col md:flex-row w-full overflow-x-hidden">
       {/* Sidebar Navigation (Responsive: Top on mobile, Left on desktop) */}
-      <aside className="w-full md:sticky md:top-0 md:h-screen md:w-64 bg-[#FFFFFF] border-b md:border-b-0 md:border-r border-[#DEE7E4] p-3 sm:p-4 flex flex-col shrink-0">
-        <div className="flex items-center justify-between md:justify-start gap-2.5 px-2 py-2 md:py-3 mb-2 md:mb-4 border-b border-[#DEE7E4]">
-          <VentureBrand className="brand-compact" subtitle="Your business workspace" />
-
-          <Link
-            href={`/c/${currentBusiness.slug}`}
-            target="_blank"
-            className="md:hidden px-2.5 py-1 text-xs bg-teal-600 text-white rounded-lg flex items-center gap-1 shadow-sm"
-          >
-            <span>Live Chat</span>
-            <ExternalLink className="w-3 h-3" />
-          </Link>
-        </div>
-
-        {/* Business Selector (Multi-Tenant Switcher) */}
-        <div className="mb-3 md:mb-4">
-          <div className="flex items-center justify-between mb-1.5 px-1">
-            <label className="text-[11px] uppercase tracking-wider text-[#596F71] font-semibold">
-              Active Business
-            </label>
-            {isAdmin && <Link
-              href="/onboard"
-              className="text-[10px] text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1"
-            >
-              <Plus className="w-3 h-3" />
-              <span>New</span>
-            </Link>}
-          </div>
-          <div className="flex md:flex-col gap-1.5 overflow-x-auto md:max-h-36 md:overflow-y-auto no-scrollbar pb-1 md:pb-0">
-            {businesses.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => handleSelectBusiness(b)}
-                className={`text-left px-3 py-1.5 md:py-2 rounded-xl text-xs transition flex items-center justify-between whitespace-nowrap shrink-0 md:shrink md:w-full ${
-                  b.id === businessId
-                    ? "bg-teal-600 text-white font-medium shadow-sm"
-                    : "bg-white md:bg-transparent text-stone-700 hover:bg-teal-50/60 border border-[#DEE7E4] md:border-0"
-                }`}
-              >
-                <span className="truncate max-w-[120px] md:max-w-none">{b.name}</span>
-                <span
-                  className={`hidden md:inline text-[10px] px-1.5 py-0.5 rounded font-mono ${
-                    b.id === businessId ? "bg-teal-700 text-white" : "bg-[#EDF4F1] text-stone-600"
-                  }`}
-                >
-                  {b.vertical}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Navigation Tabs (Horizontal Scroll on Mobile, Vertical Stack on Desktop) */}
-        <nav className="flex md:flex-col gap-1 overflow-x-auto no-scrollbar py-1 md:py-0 flex-1">
-          {navTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium whitespace-nowrap transition shrink-0 md:shrink md:w-full ${
-                  isActive
-                    ? "bg-teal-50 text-teal-800 border border-teal-300 font-semibold"
-                    : "text-stone-700 hover:text-stone-900 hover:bg-white/60"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? "text-teal-600" : "text-stone-500"}`} />
-                <span>{tab.label}</span>
-                {typeof tab.badge === "number" && tab.badge > 0 && (
-                  <span
-                    className={`ml-auto text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                      tab.badgeColor === "rose"
-                        ? "bg-teal-200 text-teal-900 font-bold"
-                        : "bg-teal-100 text-teal-800"
-                    }`}
-                  >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        <button className="ops-button mt-3" onClick={async()=>{await fetch("/api/auth/logout",{method:"POST"});window.location.href="/login";}}>Sign out</button>
-        {/* Desktop Footer Shortcuts */}
-        <div className="hidden md:block pt-4 border-t border-[#DEE7E4] space-y-2">
-          <Link
-            href={`/c/${currentBusiness.slug}`}
-            target="_blank"
-            className="flex items-center justify-between px-3 py-2 bg-white hover:bg-teal-50/60 rounded-xl text-xs text-teal-800 border border-[#DEE7E4] transition group"
-          >
-            <span className="font-medium">Open Customer Chat</span>
-            <ExternalLink className="w-3.5 h-3.5 text-stone-500 group-hover:text-teal-700 transition" />
-          </Link>
-          <Link
-            href="/onboard"
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-medium transition shadow-sm"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Onboard New Business</span>
-          </Link>
-        </div>
-      </aside>
-
+      <aside className="workspace-sidebar"><VentureBrand className="brand-compact"/><label className="business-switch"><span className="sr-only">Active business</span><select value={businessId} onChange={e=>{const b=businesses.find(b=>b.id===e.target.value);if(b)handleSelectBusiness(b);}}>{businesses.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></label><nav className="desktop-nav" aria-label="Workspace">{navTabs.filter(t=>role==='owner'||['overview','conversations','leads','bookings','followups'].includes(t.id)).map(t=><button key={t.id} aria-current={activeTab===t.id?'page':undefined} onClick={()=>setActiveTab(t.id)}><t.icon size={22}/>{t.label}</button>)}</nav><span className="workspace-role">{role==='staff'?'Staff workspace':'Owner workspace'}</span><button className="signout" onClick={async()=>{await fetch('/api/auth/logout',{method:'POST'});location.href='/login';}}>Sign out</button>{isAdmin&&<Link href="/onboard">Add business</Link>}</aside>
+      <nav className="mobile-nav" aria-label="Mobile workspace">{navTabs.filter(t=>['overview','conversations','leads','bookings'].includes(t.id)).map(t=><button key={t.id} aria-current={activeTab===t.id?'page':undefined} onClick={()=>{setActiveTab(t.id);setMoreOpen(false);}}><t.icon size={24}/>{t.id==='overview'?'Home':t.label}</button>)}<button aria-expanded={moreOpen} onClick={()=>setMoreOpen(!moreOpen)}><Layers size={24}/>More</button></nav>{moreOpen&&<div className="mobile-more">{navTabs.filter(t=>!['overview','conversations','leads','bookings'].includes(t.id)&&(role==='owner'||t.id==='followups')).map(t=><button key={t.id} onClick={()=>{setActiveTab(t.id);setMoreOpen(false);}}>{t.label}</button>)}<button onClick={async()=>{await fetch('/api/auth/logout',{method:'POST'});location.href='/login';}}>Sign out</button></div>}
       {/* Main Content Area */}
       <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-full">
-        {/* Top Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 mb-6 border-b border-[#DEE7E4] gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="px-2 py-0.5 rounded-md bg-teal-100 text-teal-800 text-[10px] font-semibold border border-teal-200">
-                {currentBusiness.vertical} Template
-              </span>
-              <span className="text-xs text-[#596F71]">• Grounded in {knowledge.length} verified facts</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
-              {currentBusiness.name}
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-            <button
-              onClick={fetchData}
-              disabled={loading}
-              className="px-3 py-1.5 rounded-xl bg-white border border-[#CDDCD7] hover:bg-[#FFFFFF] text-xs text-stone-700 flex items-center gap-1.5 transition shadow-sm"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-teal-600" : ""}`} />
-              <span>Refresh</span>
-            </button>
-            <Link
-              href={`/c/${currentBusiness.slug}`}
-              target="_blank"
-              className="px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-medium flex items-center gap-1.5 shadow-sm transition"
-            >
-              <span>Test Chat</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-        </div>
-
-        {/* TAB 1: OVERVIEW & UNIT ECONOMICS */}
-        {connectionStatus && <p className="mb-5 rounded-lg border border-teal-100 bg-teal-50 p-3 text-[11px] text-teal-900">{connectionStatus}</p>}
-        {loadError && <p role="alert" className="ops-error">{loadError}</p>}
-        {activeTab === "overview" && stats && (
-          <div className="space-y-6">
-            {knowledge.length < 3 && (
-              <section className="rounded-2xl border border-teal-200 bg-white p-4 sm:p-5 shadow-sm" aria-label="Assistant setup checklist">
-                <div className="flex flex-col sm:flex-row justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] font-semibold tracking-wider text-teal-800 uppercase">Get your assistant ready</p>
-                    <h2 className="text-base font-semibold text-stone-900 mt-1">Make every reply accurate before sharing</h2>
-                    <p className="text-xs text-stone-600 mt-1">
-                      You have {knowledge.length} verified facts. Add services or courses, prices, timings,
-                      location and booking rules. Your AI never needs to invent an answer.
-                    </p>
-                  </div>
-                  <button type="button" onClick={() => setActiveTab("knowledge")}
-                    className="self-start rounded-xl bg-teal-700 px-4 py-2 text-white text-xs font-semibold hover:bg-teal-800 whitespace-nowrap">
-                    Add business knowledge
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-4 text-xs text-stone-700">
-                  <span className="rounded-full bg-stone-100 px-3 py-1.5">1 · Add business facts</span>
-                  <button type="button" onClick={() => setActiveTab("settings")} className="rounded-full bg-stone-100 px-3 py-1.5 hover:bg-teal-50">2 · Check contact details</button>
-                  <a href={chatUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-stone-100 px-3 py-1.5 hover:bg-teal-50">3 · Test your assistant</a>
-                </div>
-              </section>
-            )}
-            {/* Quick Metrics Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="bg-white border border-[#DEE7E4] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-[#596F71] text-xs mb-2">
-                  <span>Captured Leads</span>
-                  <Users className="w-4 h-4 text-teal-600" />
-                </div>
-                <div className="text-2xl font-bold text-stone-900">{stats.totalLeads}</div>
-                <p className="text-[11px] text-emerald-700 mt-1 font-medium">
-                  {stats.newLeads} new leads waiting
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#DEE7E4] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-[#596F71] text-xs mb-2">
-                  <span>Bookings & Demos</span>
-                  <CalendarCheck className="w-4 h-4 text-amber-600" />
-                </div>
-                <div className="text-2xl font-bold text-stone-900">{stats.totalBookings}</div>
-                <p className="text-[11px] text-amber-700 mt-1 font-medium">
-                  {stats.pendingBookings} pending confirmation
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#DEE7E4] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-[#596F71] text-xs mb-2">
-                  <span>Knowledge Gaps</span>
-                  <HelpCircle className="w-4 h-4 text-teal-600" />
-                </div>
-                <div className="text-2xl font-bold text-stone-900">{stats.unansweredCount}</div>
-                <p className="text-[11px] text-[#596F71] mt-1">
-                  Questions to review & add
-                </p>
-              </div>
-
-              <div className="bg-white border border-[#DEE7E4] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-[#596F71] text-xs mb-2">
-                  <span>Est. AI Cost</span>
-                  <Coins className="w-4 h-4 text-emerald-600" />
-                </div>
-                <div className="text-2xl font-bold text-emerald-700">
-                  ₹{stats.tokenUsage.costINR}
-                </div>
-                <p className="text-[11px] text-[#596F71] mt-1 font-mono truncate">
-                  ${stats.tokenUsage.costUSD ?? (stats.tokenUsage.costINR / 84).toFixed(4)} ({stats.tokenUsage.totalTokens} tokens)
-                </p>
-              </div>
-            </div>
-
-            {/* Pitch & Faculty Defense Box (Token Unit Economics) */}
-            <div className="bg-gradient-to-br from-teal-50/90 via-[#FFFDFB] to-[#FFFFFF] border border-teal-200 rounded-2xl p-4 sm:p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-teal-600 shrink-0" />
-                <h3 className="font-semibold text-sm text-stone-900">
-                  Real Unit Economics & Token Grounding (EDP Requirement)
-                </h3>
-              </div>
-              <p className="text-xs text-[#596F71] leading-relaxed mb-4">
-                VentureLab measures real token usage per conversation. With prompt caching on Anthropic Claude 3.5 Haiku,
-                resending the business knowledge base costs under <strong>₹0.08 per conversation</strong>. A coaching centre paying
-                ₹2,999/month gets 500+ student inquiries at an AI infrastructure cost under ₹45/month (<strong>98.5% gross margin</strong>).
-              </p>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white rounded-xl p-3 border border-[#DEE7E4] text-xs">
-                <div>
-                  <span className="text-[#596F71] block text-[11px]">Input Tokens Logged</span>
-                  <span className="font-mono font-medium text-stone-900">
-                    {stats.tokenUsage.inputTokens.toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[#596F71] block text-[11px]">Output Tokens Logged</span>
-                  <span className="font-mono font-medium text-stone-900">
-                    {stats.tokenUsage.outputTokens.toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[#596F71] block text-[11px]">Average Cost / Chat</span>
-                  <span className="font-mono font-medium text-emerald-700">
-                    ₹{stats.totalMessages > 0 ? (stats.tokenUsage.costINR / (stats.totalMessages / 2 || 1)).toFixed(3) : "0.065"}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[#596F71] block text-[11px]">Lead Conversion Rate</span>
-                  <span className="font-mono font-medium text-teal-700">
-                    {stats.conversionRate}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Leads Preview with 1-Click WhatsApp action */}
-            <div className="bg-white border border-[#DEE7E4] rounded-2xl p-4 sm:p-5 shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-                <h3 className="text-sm font-semibold text-stone-900">Recent Inquiries & Call-back Queue</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={exportLeadsToCSV}
-                    className="px-2.5 py-1 bg-[#FFFFFF] hover:bg-[#DFECE6] text-stone-800 border border-[#CDDCD7] rounded-lg text-xs flex items-center gap-1 transition"
-                  >
-                    <Download className="w-3 h-3" />
-                    <span>Export CSV</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("leads")}
-                    className="text-xs text-teal-700 hover:text-teal-800 flex items-center gap-1 font-medium"
-                  >
-                    <span>View All Leads</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {leads.length === 0 ? (
-                <p className="text-xs text-[#596F71] py-4 text-center">
-                  No inquiries yet. Open the test chat to simulate customer inquiries!
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {leads.slice(0, 4).map((lead) => (
-                    <div
-                      key={lead.id}
-                      className="p-3 bg-[#FFFFFF] border border-[#DEE7E4] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
-                    >
-                      <div>
-                        <div className="font-medium text-stone-900">{lead.name}</div>
-                        <div className="text-teal-700 font-mono mt-0.5">{lead.phone}</div>
-                        {lead.details?.studentClass && (
-                          <div className="text-[#596F71] text-[11px] mt-0.5">
-                            {lead.details.studentClass} • {lead.details.targetExam || "General"}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 self-start sm:self-auto">
-                        <a
-                          href={getWhatsAppFollowUpUrl(lead)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs flex items-center gap-1 transition"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>WhatsApp</span>
-                        </a>
-
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-medium capitalize ${
-                            lead.status === "new"
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : lead.status === "contacted"
-                              ? "bg-blue-100 text-blue-800 border border-blue-200"
-                              : "bg-purple-100 text-purple-800 border border-purple-200"
-                          }`}
-                        >
-                          {lead.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
+        <header className="workspace-header"><div><h1>{activeTab==='overview'?'Welcome, '+currentBusiness.name:navTabs.find(t=>t.id===activeTab)?.label}</h1><p>{role==='staff'?'Your team’s front desk workspace':'Here is what needs your attention today'}</p></div><div className="header-actions"><a href={chatUrl} target="_blank" rel="noreferrer" className="ops-button filled"><MessageSquare size={18}/>Test chat</a><button className="ops-button" disabled={loading} onClick={fetchData}><RefreshCw size={16}/>Refresh</button><span className="channel-state">Website chat live · <em>{connectionStatus.includes('WhatsApp configured')?'WhatsApp configured':'WhatsApp not connected'}</em></span></div></header>{loadError&&<p role="alert" className="ops-error">{loadError}</p>}{loading&&!stats&&<p role="status">Loading workspace…</p>}{activeTab==='overview'&&stats&&<Overview businessId={businessId} stats={stats} bookings={bookings} leads={leads} conversations={conversations} unanswered={unanswered} staff={role==='staff'} navigate={tab=>setActiveTab(tab as typeof activeTab)}/>}
         {/* TAB 2: LEADS PIPELINE */}
         {activeTab === "leads" && (
           <div className="space-y-4">
@@ -1076,7 +748,7 @@ export default function OwnerDashboard() {
           </div>
         )}
 
-        {activeTab === "settings" && <BusinessSettings key={businessId} businessId={businessId} initialBusiness={currentBusiness} onSaved={fetchBusinesses}/>}
+        {activeTab === "settings" && role === "owner" && <><BusinessSettings key={businessId} businessId={businessId} initialBusiness={currentBusiness} onSaved={fetchBusinesses}/><TeamSettings key={businessId+"team"} businessId={businessId}/></>}
         {activeTab === "bookings" && <BookingDesk key={businessId} businessId={businessId}/>}
         {activeTab === "conversations" && <Inbox key={businessId} businessId={businessId}/>}
         {activeTab === "followups" && <FollowUps key={businessId} businessId={businessId}/>}

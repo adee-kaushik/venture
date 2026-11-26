@@ -2,7 +2,8 @@ import { Pool } from 'pg';
 import { attachDatabasePool } from '@vercel/functions';
 import { VentureStore, storeContext } from './store';
 import type { NextRequest } from 'next/server';
-import { adminConfigured, sessionScope, ADMIN_COOKIE } from './admin-auth';
+import { adminConfigured, sessionScope, sessionIdentity, ADMIN_COOKIE } from './admin-auth';
+import { accounts } from './accounts';
 
 let pool: Pool | undefined;
 function connection() {
@@ -132,7 +133,18 @@ export function persistent(handler: (req: NextRequest) => Promise<Response>) {
           return Response.json({ error: 'Invalid origin' }, { status: 403 });
         }
       }
-      return await withStore(() => handler(req), req.method === 'GET');
+      return await withStore(async () => {
+        const identity = sessionIdentity(req.cookies.get(ADMIN_COOKIE)?.value);
+        if (identity?.role === 'staff' && !req.nextUrl.pathname.startsWith('/api/auth/')) {
+          const account = accounts().find(a => a.email === identity.email && a.businessId === scope && a.role === 'staff');
+          if (!account || account.active === false || (account.sessionVersion || 0) !== identity.version)
+            return Response.json({error:'Your staff access has ended. Please sign in again.'},{status:401});
+          const path = req.nextUrl.pathname;
+          if (path === '/api/staff' || (req.method !== 'GET' && ['/api/business','/api/knowledge','/api/unanswered'].includes(path)))
+            return Response.json({error:'Only the owner can manage team access and business knowledge.'},{status:403});
+        }
+        return handler(req);
+      }, req.method === 'GET');
     } catch (error) {
       const code = workspaceErrorCode(error);
       // Safe error code for runtime logs; never log DATABASE_URL or credentials.

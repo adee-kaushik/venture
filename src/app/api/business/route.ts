@@ -1,6 +1,6 @@
 import { persistent } from "@/lib/database";
 import { NextRequest, NextResponse } from "next/server";
-import { sessionScope, ADMIN_COOKIE, isAdminRequest } from "@/lib/admin-auth";
+import { sessionScope, sessionIdentity, ADMIN_COOKIE, isAdminRequest } from "@/lib/admin-auth";
 import { store } from "@/lib/store";
 
 async function handlePOST(req: NextRequest) {
@@ -66,7 +66,7 @@ async function handleGET(req: NextRequest) {
   if (!isAdminRequest(req)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const scope = sessionScope(req.cookies.get(ADMIN_COOKIE)?.value);
   const businesses = store.getAllBusinesses().filter(b => scope === "*" || b.id === scope);
-  return NextResponse.json({ success: true, businesses, isAdmin: scope === "*" });
+  return NextResponse.json({ success: true, businesses, isAdmin: scope === "*", role: sessionIdentity(req.cookies.get(ADMIN_COOKIE)?.value)?.role || 'owner' });
 }
 
 export const POST = persistent(handlePOST);

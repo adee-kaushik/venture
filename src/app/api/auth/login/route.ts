@@ -10,9 +10,9 @@ export const POST = persistent(async (req: NextRequest) => {
   if(typeof body?.password!=='string'||body.password.length>256) return NextResponse.json({error:'Invalid credentials'},{status:400});
   const account=accounts().find(a=>a.email===String(body.email||'').trim().toLowerCase());
   let scope: string | null=null;
-  if(account && verifyPassword(account,body.password)) scope=account.businessId;
+  if(account && account.active !== false && verifyPassword(account,body.password)) scope=account.businessId;
   else if(!body.email && checkAdminPassword(body.password)) scope='*';
   if(!scope) return NextResponse.json({error:'Incorrect email or password'},{status:401});
   const res=NextResponse.json({success:true});
-  res.cookies.set(ADMIN_COOKIE,createAdminSession(scope),{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:SESSION_SECONDS});return res;
+  res.cookies.set(ADMIN_COOKIE,createAdminSession(scope,account ? {email:account.email,role:account.role || 'owner',version:account.sessionVersion || 0}:undefined),{httpOnly:true,sameSite:'lax',secure:process.env.NODE_ENV==='production',path:'/',maxAge:SESSION_SECONDS});return res;
 });

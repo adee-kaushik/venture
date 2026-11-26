@@ -23,9 +23,9 @@ function sign(payload: string): string {
     .update(payload).digest("base64url");
 }
 
-export function createAdminSession(scope = "*"): string {
+export function createAdminSession(scope = "*", identity?: { email: string; role: 'owner' | 'staff'; version: number }): string {
   if (!adminConfigured()) throw new Error("Admin credentials not configured");
-  const payload = Buffer.from(JSON.stringify({expiresAt: Date.now() + SESSION_SECONDS * 1000, scope})).toString("base64url");
+  const payload = Buffer.from(JSON.stringify({expiresAt: Date.now() + SESSION_SECONDS * 1000, scope, ...identity})).toString("base64url");
   return payload + "." + sign(payload);
 }
 
@@ -47,4 +47,10 @@ export function isAdminRequest(req: NextRequest): boolean {
 export function sessionScope(cookie?: string): string | null {
   if (!verifyAdminSession(cookie)) return null;
   return JSON.parse(Buffer.from(cookie!.split('.')[0], 'base64url').toString('utf8')).scope;
+}
+
+export function sessionIdentity(cookie?: string): { email?: string; role: 'owner' | 'staff'; version?: number } | null {
+  if (!verifyAdminSession(cookie)) return null;
+  const data = JSON.parse(Buffer.from(cookie!.split('.')[0], 'base64url').toString('utf8'));
+  return { email: data.email, role: data.role === 'staff' ? 'staff' : 'owner', version: data.version };
 }
