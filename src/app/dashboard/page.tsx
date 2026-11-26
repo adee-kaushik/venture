@@ -3,6 +3,7 @@
 import { BookingDesk, Inbox, FollowUps, BusinessSettings } from "@/components/dashboard/Operations";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import VentureBrand from "../venture-brand";
 import {
   Users,
   MessageSquare,
@@ -399,15 +400,7 @@ export default function OwnerDashboard() {
       {/* Sidebar Navigation (Responsive: Top on mobile, Left on desktop) */}
       <aside className="w-full md:sticky md:top-0 md:h-screen md:w-64 bg-[#FFFFFF] border-b md:border-b-0 md:border-r border-[#DEE7E4] p-3 sm:p-4 flex flex-col shrink-0">
         <div className="flex items-center justify-between md:justify-start gap-2.5 px-2 py-2 md:py-3 mb-2 md:mb-4 border-b border-[#DEE7E4]">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-600 flex items-center justify-center font-bold text-white shadow-md shadow-teal-500/20">
-              VL
-            </div>
-            <div>
-              <h2 className="font-bold text-sm tracking-wide text-stone-900">VentureLab</h2>
-              <p className="text-[11px] text-[#596F71]">Your business workspace</p>
-            </div>
-          </Link>
+          <VentureBrand className="brand-compact" subtitle="Your business workspace" />
 
           <Link
             href={`/c/${currentBusiness.slug}`}

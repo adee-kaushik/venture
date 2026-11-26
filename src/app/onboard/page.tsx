@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import VentureBrand from "../venture-brand";
 import {
   Sparkles,
   ArrowRight,
@@ -115,15 +116,7 @@ export default function OnboardPage() {
       {/* Top Header */}
       <header className="border-b border-[#DEE7E4] bg-[#FFFFFF]/90 backdrop-blur sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-600 flex items-center justify-center font-bold text-white shadow-md shadow-teal-500/20">
-              VL
-            </div>
-            <div>
-              <span className="font-bold text-sm tracking-wide text-stone-900">VentureLab</span>
-              <span className="text-[10px] text-[#596F71] block -mt-0.5">3-Minute Done-For-You Setup</span>
-            </div>
-          </Link>
+          <VentureBrand className="brand-compact" subtitle="3-Minute Done-For-You Setup" />
 
           {/* Stepper Dots */}
           <div className="flex items-center gap-1.5 sm:gap-2 text-xs">

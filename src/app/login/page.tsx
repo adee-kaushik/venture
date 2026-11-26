@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import VentureBrand from "../venture-brand";
 
 export default function AdminLogin() {
   const [email, setEmail] = useState("");
@@ -34,7 +35,8 @@ export default function AdminLogin() {
     <main className="min-h-screen flex items-center justify-center bg-[#F7F9F8] px-4">
       <form onSubmit={signIn} className="w-full max-w-sm rounded-2xl border border-teal-200 bg-white p-7 shadow-xl space-y-5">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900">VentureLab Owner Login</h1>
+          <VentureBrand className="brand-compact mb-5" />
+          <h1 className="text-2xl font-bold text-stone-900">Owner Login</h1>
           <p className="mt-2 text-sm text-stone-600">Sign in to manage businesses, enquiries and bookings.</p>
         </div>
         <label className="block text-sm font-medium" htmlFor="email">Email</label><input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" className="w-full rounded-xl border border-stone-300 px-4 py-3" placeholder="Your account email"/><label className="block text-sm font-medium text-stone-700" htmlFor="password">Owner password</label>
